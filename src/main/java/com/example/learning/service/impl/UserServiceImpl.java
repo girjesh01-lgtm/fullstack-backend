@@ -6,6 +6,8 @@ import com.example.learning.repository.UserRepository;
 import com.example.learning.service.UserService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -29,5 +31,31 @@ public class UserServiceImpl implements UserService {
         response.setEmail(saved.getEmail());
 
         return response;
+    }
+
+    @Override
+    public List<UserDto> getAllUsers() {
+        List<User> users =  userRepo.findAll();
+
+        return users.stream().map(user -> {
+            UserDto userDto = new UserDto();
+            userDto.setId(user.getId());
+            userDto.setName(user.getName());
+            userDto.setEmail(user.getEmail());
+            return userDto;
+        }).toList();
+    }
+
+    @Override
+    public UserDto getUserById(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+        dto.setEmail(user.getEmail());
+
+        return dto;
     }
 }
