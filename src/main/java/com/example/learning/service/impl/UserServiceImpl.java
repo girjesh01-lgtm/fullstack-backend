@@ -4,6 +4,9 @@ import com.example.learning.dto.UserDto;
 import com.example.learning.entity.User;
 import com.example.learning.repository.UserRepository;
 import com.example.learning.service.UserService;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,10 +14,13 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private UserRepository userRepo;
+    private final UserRepository userRepo;
+    private final ModelMapper modelmapper;
 
-    public UserServiceImpl(UserRepository userRepo) {
+    public UserServiceImpl(UserRepository userRepo, ModelMapper modelMapper) {
+
         this.userRepo = userRepo;
+        this.modelmapper = modelMapper;
     }
 
     @Override
@@ -34,7 +40,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getAllUsers() {
+    public List<UserDto> getPagedUsers() {
         List<User> users =  userRepo.findAll();
 
         return users.stream().map(user -> {
@@ -57,5 +63,49 @@ public class UserServiceImpl implements UserService {
         dto.setEmail(user.getEmail());
 
         return dto;
+    }
+
+    @Override
+    public UserDto updateUser(Long id, UserDto dto) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+
+        User updated = userRepo.save(user);
+
+        UserDto response = new UserDto();
+        response.setId(updated.getId());
+        response.setName(updated.getName());
+        response.setEmail(updated.getEmail());
+
+        return response;
+    }
+
+    @Override
+    public void deleteUser(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        userRepo.delete(user);
+    }
+
+    @Override
+    public Page<UserDto> getPagedUsers(Pageable pageable) {
+
+        Page<User> usersPage = userRepo.findAll(pageable);
+
+        /*Page<UserDto> result = usersPage.map(u -> {
+            UserDto dto = new UserDto();
+            dto.setId(u.getId());
+            dto.setName(u.getName());
+            dto.setEmail(u.getEmail());
+            return dto;
+        });
+         */
+
+        Page<UserDto> result = usersPage.map(u -> modelmapper.map(u, UserDto.class));
+
+        return result;
     }
 }
