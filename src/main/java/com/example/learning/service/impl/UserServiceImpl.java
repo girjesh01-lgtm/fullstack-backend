@@ -2,6 +2,8 @@ package com.example.learning.service.impl;
 
 import com.example.learning.dto.UserDto;
 import com.example.learning.entity.User;
+import com.example.learning.exception.EmailAlreadyExistsException;
+import com.example.learning.exception.ResourceNotFoundException;
 import com.example.learning.repository.UserRepository;
 import com.example.learning.service.UserService;
 import org.modelmapper.ModelMapper;
@@ -27,6 +29,10 @@ public class UserServiceImpl implements UserService {
     public UserDto createUser(UserDto userDto) {
         User user = new User();
         user.setName(userDto.getName());
+
+        if (userRepo.existsByEmail(userDto.getEmail())) {
+            throw new EmailAlreadyExistsException("Email alrady exists : " + userDto.getEmail());
+        }
         user.setEmail(userDto.getEmail());
 
         User saved = userRepo.save(user);
@@ -55,7 +61,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto getUserById(Long id) {
         User user = userRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         UserDto dto = new UserDto();
         dto.setId(user.getId());
@@ -69,7 +75,11 @@ public class UserServiceImpl implements UserService {
     public UserDto updateUser(Long id, UserDto dto) {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
         user.setName(dto.getName());
+        if (userRepo.existsByEmail(dto.getEmail())) {
+            throw new EmailAlreadyExistsException("Email alrady exists : " + dto.getEmail());
+        }
         user.setEmail(dto.getEmail());
 
         User updated = userRepo.save(user);
@@ -85,7 +95,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) {
         User user = userRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         userRepo.delete(user);
     }
